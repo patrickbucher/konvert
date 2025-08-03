@@ -1,18 +1,33 @@
+/// F is a unit conversion function.
+type F = fn(f64) -> f64;
+
+/// Calculation is either a conversion rate or a lambda function defining a conversion formula.
+#[derive(Clone)]
+pub enum Calculation {
+    Rate(f64),
+    Func { forward: F, reverse: F },
+}
+
 /// Conversion defines the relationship of two units so that source_unit = rate * target_unit.
 /// E.g. kg=1000g
-#[derive(Debug, PartialEq)]
 pub struct Conversion {
     pub source_unit: String,
-    pub rate: f64,
+    pub calculation: Calculation,
     pub target_unit: String,
+}
+
+impl PartialEq for Conversion {
+    fn eq(&self, other: &Conversion) -> bool {
+        self.source_unit == other.source_unit && self.target_unit == other.target_unit
+    }
 }
 
 impl Conversion {
     /// Creates a new conversion with the given values.
-    pub fn new(source_unit: &str, rate: f64, target_unit: &str) -> Conversion {
+    pub fn new(source_unit: &str, calculation: Calculation, target_unit: &str) -> Conversion {
         Conversion {
             source_unit: String::from(source_unit),
-            rate,
+            calculation,
             target_unit: String::from(target_unit),
         }
     }
@@ -22,7 +37,13 @@ impl Conversion {
     pub fn invert(&self) -> Conversion {
         Conversion {
             source_unit: self.target_unit.clone(),
-            rate: 1.0 / self.rate,
+            calculation: match &self.calculation {
+                Calculation::Rate(r) => Calculation::Rate(1.0 / r),
+                Calculation::Func { forward, reverse } => Calculation::Func {
+                    forward: *reverse,
+                    reverse: *forward,
+                },
+            },
             target_unit: self.source_unit.clone(),
         }
     }

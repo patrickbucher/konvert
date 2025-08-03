@@ -1,29 +1,38 @@
-use konvert::{Conversion, find_conversion_path};
+use konvert::{Calculation, Conversion, find_conversion_path};
 use std::collections::HashSet;
 use std::{env, process};
 
 fn build_conversions() -> Vec<Conversion> {
-    let conversions: Vec<(&str, f64, &str)> = vec![
-        ("kg", 2.20462262, "lbs"),
-        ("kg", 1000.0, "g"),
-        ("km", 0.62137119, "mi"),
-        ("km", 1000.0, "m"),
-        ("m", 3.2808399, "ft"),
-        ("ft", 12.0, "in"),
-        ("yd", 3.0, "ft"),
-        ("oz", 28.4130625, "ml"),
-        ("pt", 568.26125, "ml"),
-        ("l", 1000.0, "ml"),
-        ("l", 10.0, "dl"),
-        ("gal", 8.0, "pt"),
+    let conversions: Vec<(&str, Calculation, &str)> = vec![
+        ("kg", Calculation::Rate(2.20462262), "lbs"),
+        ("kg", Calculation::Rate(1000.0), "g"),
+        ("km", Calculation::Rate(0.62137119), "mi"),
+        ("km", Calculation::Rate(1000.0), "m"),
+        ("m", Calculation::Rate(3.2808399), "ft"),
+        ("ft", Calculation::Rate(12.0), "in"),
+        ("yd", Calculation::Rate(3.0), "ft"),
+        ("oz", Calculation::Rate(28.4130625), "ml"),
+        ("pt", Calculation::Rate(568.26125), "ml"),
+        ("l", Calculation::Rate(1000.0), "ml"),
+        ("l", Calculation::Rate(10.0), "dl"),
+        ("gal", Calculation::Rate(8.0), "pt"),
+        (
+            "C",
+            Calculation::Func {
+                forward: |c| c * 9.0 / 5.0 + 32.0,
+                reverse: |f| (f - 32.0) * 5.0 / 9.0,
+            },
+            "F",
+        ),
     ];
-    let mut forward: Vec<Conversion> = conversions
+    conversions
         .iter()
-        .map(|(s, r, t)| Conversion::new(s, *r, t))
-        .collect();
-    let mut backward: Vec<Conversion> = forward.iter().map(|c| c.invert()).collect();
-    forward.append(&mut backward);
-    forward
+        .flat_map(|(s, c, t)| {
+            let c = Conversion::new(s, c.clone(), t);
+            let r = c.invert();
+            [c, r]
+        })
+        .collect()
 }
 
 fn fail_usage() -> ! {
@@ -89,7 +98,10 @@ fn main() {
 
             match find_conversion_path(&source_unit, &target_unit, &conversions) {
                 Some(path) => {
-                    let result = path.iter().fold(value, |acc, e| acc * e.rate);
+                    let result = path.iter().fold(value, |acc, e| match &e.calculation {
+                        Calculation::Rate(r) => acc * r,
+                        Calculation::Func { forward, .. } => forward(acc),
+                    });
                     println!("{result}");
                 }
                 None => {
