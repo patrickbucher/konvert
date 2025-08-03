@@ -24,6 +24,14 @@ fn build_conversions() -> Vec<Conversion> {
             },
             "F",
         ),
+        (
+            "C",
+            Calculation::Func {
+                forward: |c| c + 273.15,
+                reverse: |k| k - 273.15,
+            },
+            "K",
+        ),
     ];
     conversions
         .iter()
