@@ -1,4 +1,4 @@
-use konvert::Conversion;
+use konvert::{Conversion, find_paths};
 use std::collections::HashSet;
 use std::{env, process};
 
@@ -6,7 +6,16 @@ fn build_conversions() -> Vec<Conversion> {
     let conversions: Vec<(&str, f64, &str)> = vec![
         ("kg", 2.20462262, "lbs"),
         ("kg", 1000.0, "g"),
-        ("g", 1000.0, "mg"),
+        ("km", 0.62137119, "mi"),
+        ("km", 1000.0, "m"),
+        ("m", 3.2808399, "ft"),
+        ("ft", 12.0, "in"),
+        ("yd", 3.0, "ft"),
+        ("oz", 28.4130625, "ml"),
+        ("pt", 568.26125, "ml"),
+        ("l", 1000.0, "ml"),
+        ("l", 10.0, "dl"),
+        ("gal", 8.0, "pt"),
     ];
     let mut forward: Vec<Conversion> = conversions
         .iter()
@@ -50,10 +59,8 @@ fn parse_cli_args() -> (f64, String, String) {
 
 fn main() {
     let conversions = build_conversions();
-    println!("{conversions:?}");
 
     let (value, source_unit, target_unit) = parse_cli_args();
-    println!("{value} {source_unit} {target_unit}");
 
     let all_units: HashSet<&String> = conversions
         .iter()
@@ -65,5 +72,14 @@ fn main() {
     if !all_units.contains(&target_unit) {
         fail_unsupported_unit(&target_unit);
     }
-    println!("{all_units:?}");
+
+    match find_paths(&source_unit, &target_unit, &conversions) {
+        Some(path) => {
+            let result = path.iter().fold(value, |acc, e| acc * e.rate);
+            println!("{result}");
+        }
+        None => {
+            eprintln!("conversion from '{source_unit}' to '{target_unit}' undefined");
+        }
+    }
 }
