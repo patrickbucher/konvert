@@ -36,7 +36,12 @@ fn fail_unsupported_unit(unit: &str) -> ! {
     process::exit(1);
 }
 
-fn parse_cli_args() -> (f64, String, String) {
+enum Command {
+    List,
+    Conversion(f64, String, String),
+}
+
+fn parse_cli_args() -> Command {
     let mut args = env::args();
     args.next(); // "konverter"
     let value = match args.next() {
@@ -44,7 +49,9 @@ fn parse_cli_args() -> (f64, String, String) {
             Ok(v) => v,
             Err(_) => fail_usage(),
         },
-        None => fail_usage(),
+        None => {
+            return Command::List;
+        }
     };
     let source_unit = match args.next() {
         Some(s) => s,
@@ -54,32 +61,41 @@ fn parse_cli_args() -> (f64, String, String) {
         Some(s) => s,
         None => fail_usage(),
     };
-    (value, source_unit, target_unit)
+    Command::Conversion(value, source_unit, target_unit)
 }
 
 fn main() {
     let conversions = build_conversions();
-
-    let (value, source_unit, target_unit) = parse_cli_args();
-
     let all_units: HashSet<&String> = conversions
         .iter()
         .flat_map(|c| [&c.source_unit, &c.target_unit])
         .collect();
-    if !all_units.contains(&source_unit) {
-        fail_unsupported_unit(&source_unit);
-    }
-    if !all_units.contains(&target_unit) {
-        fail_unsupported_unit(&target_unit);
-    }
 
-    match find_conversion_path(&source_unit, &target_unit, &conversions) {
-        Some(path) => {
-            let result = path.iter().fold(value, |acc, e| acc * e.rate);
-            println!("{result}");
+    match parse_cli_args() {
+        Command::List => {
+            let mut units: Vec<&String> = all_units.into_iter().collect();
+            units.sort();
+            for unit in units {
+                println!("{unit}");
+            }
         }
-        None => {
-            eprintln!("conversion from '{source_unit}' to '{target_unit}' undefined");
+        Command::Conversion(value, source_unit, target_unit) => {
+            if !all_units.contains(&source_unit) {
+                fail_unsupported_unit(&source_unit);
+            }
+            if !all_units.contains(&target_unit) {
+                fail_unsupported_unit(&target_unit);
+            }
+
+            match find_conversion_path(&source_unit, &target_unit, &conversions) {
+                Some(path) => {
+                    let result = path.iter().fold(value, |acc, e| acc * e.rate);
+                    println!("{result}");
+                }
+                None => {
+                    eprintln!("conversion from '{source_unit}' to '{target_unit}' undefined");
+                }
+            }
         }
     }
 }

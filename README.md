@@ -4,6 +4,9 @@ converts units
 
 usage:
 
+    $ konvert
+    [list of all supported units]
+
     $ konvert 80 kg lbs
     176.3698096
 
