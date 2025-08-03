@@ -28,18 +28,18 @@ impl Conversion {
     }
 }
 
-pub fn find_paths<'a>(
+pub fn find_conversion_path<'a>(
     source_unit: &'a str,
     target_unit: &'a str,
     conversions: &'a Vec<Conversion>,
 ) -> Option<Vec<&'a Conversion>> {
-    let paths = do_find_paths(source_unit, target_unit, conversions, Vec::new());
+    let paths = find_paths(source_unit, target_unit, conversions, Vec::new());
     let mut weighted_paths: Vec<_> = paths.iter().map(|p| (p, p.len())).collect();
     weighted_paths.sort_by(|(_, m), (_, n)| m.cmp(n));
     weighted_paths.into_iter().map(|(p, _)| p).next().cloned()
 }
 
-fn do_find_paths<'a>(
+fn find_paths<'a>(
     unit: &'a str,
     target_unit: &'a str,
     conversions: &'a Vec<Conversion>,
@@ -56,8 +56,7 @@ fn do_find_paths<'a>(
         if candidate.target_unit == target_unit {
             paths.push(new_path);
         } else {
-            for found in do_find_paths(&candidate.target_unit, target_unit, conversions, new_path)
-            {
+            for found in find_paths(&candidate.target_unit, target_unit, conversions, new_path) {
                 paths.push(found);
             }
         }

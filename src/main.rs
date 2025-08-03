@@ -1,4 +1,4 @@
-use konvert::{Conversion, find_paths};
+use konvert::{Conversion, find_conversion_path};
 use std::collections::HashSet;
 use std::{env, process};
 
@@ -73,7 +73,7 @@ fn main() {
         fail_unsupported_unit(&target_unit);
     }
 
-    match find_paths(&source_unit, &target_unit, &conversions) {
+    match find_conversion_path(&source_unit, &target_unit, &conversions) {
         Some(path) => {
             let result = path.iter().fold(value, |acc, e| acc * e.rate);
             println!("{result}");
