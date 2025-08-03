@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 /// Conversion defines the relationship of two units so that source_unit = rate * target_unit.
 /// E.g. kg=1000g
 #[derive(Debug)]
@@ -28,4 +30,20 @@ impl Conversion {
     }
 }
 
-// TODO: build algorithm to find path in conversion vector from source to target
+pub fn find_path(
+    source_unit: &str,
+    target_unit: &str,
+    conversions: &Vec<Conversion>,
+) -> Vec<Vec<Conversion>> {
+    do_find_path(source_unit, target_unit, conversions, Vec::new(), HashSet::new())
+}
+
+fn do_find_path(
+    unit: &str,
+    target_unit: &str,
+    conversions: &Vec<Conversion>,
+    path: Vec<Conversion>,
+    visited: HashSet<String>,
+) -> Vec<Vec<Conversion>> {
+    vec![]
+}
